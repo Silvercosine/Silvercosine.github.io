@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I am about to exercise my second amendment rights</title>
+</head>
+<style>
+    * {
+        font-family: 'Convergence', sans-serif;
+    }
+
+    .input-label {
+        display: block;
+        width: 120px;
+    }
+    .input-group {
+        display: flex;
+        flex-direction: column;
+        width: 400px;
+    }
+</style>
+<body>
+    <h2>Game Catalogue</h2>
+    <form id="game-form">
+        <input id="game-id" name="id" type="hidden">
+        <div class="input-group">
+            <label class="input-label">Game title</label>
+            <input required id="title-input" name="title" type="text" placeholder="input the game title">
+        </div>
+        <br>
+        <div class="input-group">
+            <label class="input-label">Game genre</label>
+            <input required id="genre-input" name="genre" type="text" placeholder="input the game genre">
+        </div>
+        <br>
+        <div class="input-group">
+            <label class="input-label">Game price</label>
+            <input required id="price-input" name="price" type="number" placeholder="input the game price" min="0.0">
+        </div>
+        <br>
+        <div>
+            <button id="form-button" type="submit">Submit</button>
+        </div>
+    </form>
+
+    <table border="1" style="border-collapse: collapse;">
+        <thead>
+            <th>No</th>
+            <th>Title</th>
+            <th>Genre</th>
+            <th>Price</th>
+        </thead>
+        <tbody id="game-list-table"></tbody>
+    </table>
+
+    <br>
+
+    <script>
+        const gameformRef = document.getElementById("game-form");
+        const gametableRef = document.getElementById("game-list-table");
+
+        window.onload = async function() {
+            const response = await fetch("http://localhost:5000/games");
+            const responseData = await response.json();
+            const gameList = responseData["data"]
+
+            for (let a = 0; a < gameList.length; a++){
+                gametableRef.innerHTML = gametableRef.innerHTML + `
+                <tr>
+                    <td>${a + 1}</td> 
+                    <td>${gameList[a]["title"]}</td> 
+                    <td>${gameList[a]["genre"]}</td> 
+                    <td>$${gameList[a]["price"]}</td>
+                    <td>
+                        <button onclick="deleteGame('${gameList[a]['id']}')">Delete</button>    
+                    </td>
+                    <td>
+                        <button onclick="updateGame('${gameList[a]['id']}')">Update</button>    
+                    </td>
+                </tr>`
+            }
+        };
+
+        gameformRef.addEventListener("submit", async function (event) {
+            event.preventDefault();
+            const formData = new FormData(gameformRef);
+
+            const data = {
+                title: formData.get('title'),
+                genre: formData.get('genre'),
+                price: Number(formData.get('price')),
+            }
+
+            const response = await fetch("http://localhost:5000/games", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data)
+            });
+
+            console.log(await response.json())
+
+            window.location = "/";
+        })
+
+        async function deleteGame(gameId) {
+            const isConfirmed = confirm("Are you sure you wanaa delete this entry?")
+
+            if (isConfirmed){
+                const response = await fetch(`http://localhost:5000/games/${gameId}`, {
+                    method: "DELETE"
+                });
+                window.location = "/"
+            }
+        }
+
+        async function updateGame(gameId) {
+            const response = await fetch(`http://localhost:5000/games/${gameId}`);
+            
+            const { data } = await response.json();
+
+            document.getElementById("game-id").value = data["id"];
+            document.getElementById("title-input").value = data["title"];
+            document.getElementById("genre-input").value = data["genre"];
+            document.getElementById("price-input").value = Number(data["price"]);
+            document.getElementById("form-button").innerHTML = "Update";
+        }
+    </script>
+</body>
+</html>
